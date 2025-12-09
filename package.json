@@ -1,0 +1,73 @@
+{
+  "name": "opengrok-navigator",
+  "displayName": "OpenGrok Navigator",
+  "description": "Open current line in OpenGrok with keyboard shortcut and context menu",
+  "version": "1.0.0",
+  "publisher": "your-publisher-name",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:opengrok-navigator.openInOpenGrok"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "opengrok-navigator.openInOpenGrok",
+        "title": "Open in OpenGrok"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "opengrok-navigator.openInOpenGrok",
+        "key": "ctrl+shift+o",
+        "mac": "cmd+shift+o",
+        "when": "editorTextFocus"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "opengrok-navigator.openInOpenGrok",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "OpenGrok Navigator",
+      "properties": {
+        "opengrok-navigator.baseUrl": {
+          "type": "string",
+          "default": "http://localhost:8080/source",
+          "description": "Base URL of your OpenGrok instance (e.g., http://opengrok.example.com/source)"
+        },
+        "opengrok-navigator.projectRoot": {
+          "type": "string",
+          "default": "",
+          "description": "Optional: Project root path in OpenGrok if different from workspace root"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "eslint": "^8.28.0",
+    "typescript": "^4.9.3"
+  }
+}
