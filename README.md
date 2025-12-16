@@ -4,9 +4,11 @@ A VS Code extension that allows you to quickly open the current line of code in 
 
 ## Features
 
-- **Keyboard Shortcut**: Press `Ctrl+Shift+O` (Windows/Linux) or `Cmd+Shift+O` (Mac) to open the current line in OpenGrok
-- **Context Menu**: Right-click in the editor and select "Open in OpenGrok"
+- **Open in OpenGrok**: Press `Ctrl+Shift+O` (Windows/Linux) or `Cmd+Shift+O` (Mac) to open the current line in OpenGrok
+- **Copy OpenGrok URL**: Press `Ctrl+Shift+C` (Windows/Linux) or `Cmd+Shift+C` (Mac) to copy the OpenGrok URL to clipboard
+- **Context Menu**: Right-click in the editor and select "Open in OpenGrok" or "Copy OpenGrok URL"
 - **Configurable**: Set your OpenGrok base URL in VS Code settings
+- **Integrated Browser**: Optionally open links in VS Code's built-in Simple Browser
 
 ## Installation
 
@@ -47,12 +49,23 @@ Example settings in `settings.json`:
 
 ## Usage
 
+### Opening in OpenGrok
+
 1. Open a file in VS Code
 2. Place your cursor on the line you want to view in OpenGrok
 3. Use one of the following methods:
    - Press `Ctrl+Shift+O` (Windows/Linux) or `Cmd+Shift+O` (Mac)
    - Right-click and select "Open in OpenGrok" from the context menu
 4. Your browser will open to the corresponding line in OpenGrok
+
+### Copying OpenGrok URL
+
+1. Open a file in VS Code
+2. Place your cursor on the line you want to reference
+3. Use one of the following methods:
+   - Press `Ctrl+Shift+C` (Windows/Linux) or `Cmd+Shift+C` (Mac)
+   - Right-click and select "Copy OpenGrok URL" from the context menu
+4. The URL will be copied to your clipboard
 
 ## How It Works
 
@@ -78,9 +91,11 @@ The extension:
 ### 1.0.0
 
 Initial release with:
-- Keyboard shortcut support
-- Context menu integration
+- Open in OpenGrok with keyboard shortcut (`Ctrl+Shift+O` / `Cmd+Shift+O`)
+- Copy OpenGrok URL with keyboard shortcut (`Ctrl+Shift+C` / `Cmd+Shift+C`)
+- Context menu integration for both commands
 - Configurable OpenGrok base URL
+- Optional integrated Simple Browser support
 - Line number navigation
 
 ## Contributing

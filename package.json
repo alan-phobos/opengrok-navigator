@@ -19,6 +19,10 @@
       {
         "command": "opengrok-navigator.openInOpenGrok",
         "title": "Open in OpenGrok"
+      },
+      {
+        "command": "opengrok-navigator.copyOpenGrokUrl",
+        "title": "Copy OpenGrok URL"
       }
     ],
     "keybindings": [
@@ -27,12 +31,23 @@
         "key": "ctrl+shift+o",
         "mac": "cmd+shift+o",
         "when": "editorTextFocus"
+      },
+      {
+        "command": "opengrok-navigator.copyOpenGrokUrl",
+        "key": "ctrl+shift+c",
+        "mac": "cmd+shift+c",
+        "when": "editorTextFocus"
       }
     ],
     "menus": {
       "editor/context": [
         {
           "command": "opengrok-navigator.openInOpenGrok",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        },
+        {
+          "command": "opengrok-navigator.copyOpenGrokUrl",
           "when": "editorTextFocus",
           "group": "navigation"
         }
