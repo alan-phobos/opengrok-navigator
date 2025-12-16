@@ -50,6 +50,11 @@
           "type": "string",
           "default": "",
           "description": "Optional: Project root path in OpenGrok if different from workspace root"
+        },
+        "opengrok-navigator.useIntegratedBrowser": {
+          "type": "boolean",
+          "default": false,
+          "description": "Open OpenGrok links in VS Code's built-in Simple Browser instead of external browser"
         }
       }
     }

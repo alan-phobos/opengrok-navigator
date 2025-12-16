@@ -4,7 +4,7 @@ import * as path from 'path';
 export function activate(context: vscode.ExtensionContext) {
     console.log('OpenGrok Navigator extension is now active');
 
-    let disposable = vscode.commands.registerCommand('opengrok-navigator.openInOpenGrok', () => {
+    let disposable = vscode.commands.registerCommand('opengrok-navigator.openInOpenGrok', async () => {
         const editor = vscode.window.activeTextEditor;
         
         if (!editor) {
@@ -20,8 +20,8 @@ export function activate(context: vscode.ExtensionContext) {
         const config = vscode.workspace.getConfiguration('opengrok-navigator');
         const baseUrl = config.get<string>('baseUrl');
         const projectRoot = config.get<string>('projectRoot');
+        const useIntegratedBrowser = config.get<boolean>('useIntegratedBrowser', false);
         const workspaceName = vscode.workspace.workspaceFolders?.[0]?.name;
-        vscode.window.showErrorMessage(`workspaceName = ${workspaceName}`)
 
         if (!baseUrl) {
             vscode.window.showErrorMessage('OpenGrok base URL is not configured. Please set it in settings.');
@@ -52,13 +52,31 @@ export function activate(context: vscode.ExtensionContext) {
         // Construct OpenGrok URL
         // OpenGrok URL format: {baseUrl}/xref/{path}#{line}
         const openGrokUrl = `${baseUrl}/xref/${workspaceName}/${relativePath}#${lineNumber}`;
-        
-        console.log(`Opening OpenGrok URL: ${openGrokUrl}`);
-        
-        // Open in browser
-        vscode.env.openExternal(vscode.Uri.parse(openGrokUrl));
-        
-        vscode.window.showInformationMessage(`Opened current line ${lineNumber} in OpenGrok`);
+
+        // Open in browser (integrated or external based on setting)
+        if (useIntegratedBrowser) {
+            // Open in VS Code's built-in Simple Browser
+            try {
+                await vscode.commands.executeCommand('simpleBrowser.show', openGrokUrl);
+            } catch (error) {
+                // Handle any errors with Simple Browser
+                vscode.window.showErrorMessage(
+                    `Failed to open in Simple Browser: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    'Open Settings',
+                    'Use External Browser'
+                ).then(selection => {
+                    if (selection === 'Open Settings') {
+                        vscode.commands.executeCommand('workbench.action.openSettings', 'opengrok-navigator.useIntegratedBrowser');
+                    } else if (selection === 'Use External Browser') {
+                        vscode.env.openExternal(vscode.Uri.parse(openGrokUrl));
+                    }
+                });
+                return;
+            }
+        } else {
+            // Open in external system browser
+            vscode.env.openExternal(vscode.Uri.parse(openGrokUrl));
+        }
     });
 
     context.subscriptions.push(disposable);

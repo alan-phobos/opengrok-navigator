@@ -33,13 +33,15 @@ Before using the extension, configure your OpenGrok base URL:
 3. Set the following settings:
    - **Base URL**: Your OpenGrok instance URL (e.g., `http://opengrok.example.com/source`)
    - **Project Root** (optional): If your project in OpenGrok has a different root path
+   - **Use Integrated Browser** (optional): Enable to open OpenGrok links in VS Code's built-in Simple Browser instead of your system browser (default: disabled)
 
 Example settings in `settings.json`:
 
 ```json
 {
   "opengrok-navigator.baseUrl": "http://localhost:8080/source",
-  "opengrok-navigator.projectRoot": ""
+  "opengrok-navigator.projectRoot": "",
+  "opengrok-navigator.useIntegratedBrowser": false
 }
 ```
 
