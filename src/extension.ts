@@ -120,7 +120,97 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage('OpenGrok URL copied to clipboard');
     });
 
-    context.subscriptions.push(openDisposable, copyDisposable);
+    // Command: Search in OpenGrok
+    let searchDisposable = vscode.commands.registerCommand('opengrok-navigator.searchInOpenGrok', async () => {
+        const editor = vscode.window.activeTextEditor;
+        const config = vscode.workspace.getConfiguration('opengrok-navigator');
+        const baseUrl = config.get<string>('baseUrl');
+        const useTopLevelFolder = config.get<boolean>('useTopLevelFolder', false);
+
+        if (!baseUrl) {
+            vscode.window.showErrorMessage('OpenGrok base URL is not configured. Please set it in settings.');
+            return;
+        }
+
+        // Determine the project name
+        let projectName: string = '';
+
+        if (editor) {
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (workspaceFolders) {
+                const workspaceRoot = workspaceFolders[0].uri.fsPath;
+                const filePath = editor.document.uri.fsPath;
+                const relativePath = path.relative(workspaceRoot, filePath);
+
+                if (useTopLevelFolder) {
+                    // Use the top-level folder name
+                    const pathComponents = relativePath.split(path.sep);
+                    if (pathComponents.length > 0) {
+                        projectName = pathComponents[0];
+                    }
+                } else {
+                    // Use the workspace name
+                    projectName = workspaceFolders[0].name;
+                }
+            }
+        }
+
+        // Get selected text or prompt for search term
+        let searchText = '';
+        if (editor && !editor.selection.isEmpty) {
+            searchText = editor.document.getText(editor.selection);
+        }
+
+        // If no selection, prompt for search term
+        if (!searchText) {
+            const input = await vscode.window.showInputBox({
+                prompt: 'Enter text to search in OpenGrok',
+                placeHolder: 'Search term'
+            });
+
+            if (!input) {
+                return; // User cancelled
+            }
+            searchText = input;
+        }
+
+        // URL encode and quote the search text for exact match
+        const quotedSearchText = `"${searchText}"`;
+        const encodedSearchText = encodeURIComponent(quotedSearchText);
+
+        // Construct OpenGrok search URL with project parameter
+        // OpenGrok search format: {baseUrl}/search?full={searchText}&project={projectName}
+        let searchUrl = `${baseUrl}/search?full=${encodedSearchText}`;
+        if (projectName) {
+            searchUrl += `&project=${encodeURIComponent(projectName)}`;
+        }
+
+        const useIntegratedBrowser = config.get<boolean>('useIntegratedBrowser', false);
+
+        // Open search results in browser (integrated or external based on setting)
+        if (useIntegratedBrowser) {
+            try {
+                await vscode.commands.executeCommand('simpleBrowser.show', searchUrl);
+            } catch (error) {
+                vscode.window.showErrorMessage(
+                    `Failed to open in Simple Browser: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    'Open Settings',
+                    'Use External Browser'
+                ).then(selection => {
+                    if (selection === 'Open Settings') {
+                        vscode.commands.executeCommand('workbench.action.openSettings', 'opengrok-navigator.useIntegratedBrowser');
+                    } else if (selection === 'Use External Browser') {
+                        vscode.env.openExternal(vscode.Uri.parse(searchUrl));
+                    }
+                });
+                return;
+            }
+        } else {
+            vscode.env.openExternal(vscode.Uri.parse(searchUrl));
+        }
+    });
+
+    context.subscriptions.push(openDisposable, copyDisposable, searchDisposable);
 }
 
 export function deactivate() {}

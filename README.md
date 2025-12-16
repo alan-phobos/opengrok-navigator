@@ -6,7 +6,8 @@ A VS Code extension that allows you to quickly open the current line of code in 
 
 - **Open in OpenGrok**: Press `Ctrl+Shift+O` (Windows/Linux) or `Cmd+Shift+O` (Mac) to open the current line in OpenGrok
 - **Copy OpenGrok URL**: Press `Ctrl+Shift+C` (Windows/Linux) or `Cmd+Shift+C` (Mac) to copy the OpenGrok URL to clipboard
-- **Context Menu**: Right-click in the editor and select "Open in OpenGrok" or "Copy OpenGrok URL"
+- **Search in OpenGrok**: Press `Ctrl+Shift+F` (Windows/Linux) or `Cmd+Shift+F` (Mac) to search selected text or enter a search term
+- **Context Menu**: Right-click in the editor and select "Open in OpenGrok", "Copy OpenGrok URL", or "Search in OpenGrok"
 - **Configurable**: Set your OpenGrok base URL in VS Code settings
 - **Integrated Browser**: Optionally open links in VS Code's built-in Simple Browser
 
@@ -94,6 +95,16 @@ http://localhost:8080/source/xref/workspace-root/project-a/src/main.ts#10
    - Right-click and select "Copy OpenGrok URL" from the context menu
 4. The URL will be copied to your clipboard
 
+### Searching in OpenGrok
+
+1. Optionally, select text in the editor that you want to search for
+2. Use one of the following methods:
+   - Press `Ctrl+Shift+F` (Windows/Linux) or `Cmd+Shift+F` (Mac)
+   - Right-click and select "Search in OpenGrok" from the context menu
+3. If you had text selected, it will search for that text. Otherwise, you'll be prompted to enter a search term
+4. The search query will be quoted for an exact match (e.g., `"searchTerm"`)
+5. OpenGrok search results will open in your browser
+
 ## How It Works
 
 The extension:
@@ -120,10 +131,13 @@ The extension:
 Initial release with:
 - Open in OpenGrok with keyboard shortcut (`Ctrl+Shift+O` / `Cmd+Shift+O`)
 - Copy OpenGrok URL with keyboard shortcut (`Ctrl+Shift+C` / `Cmd+Shift+C`)
-- Context menu integration for both commands
+- Search in OpenGrok with keyboard shortcut (`Ctrl+Shift+F` / `Cmd+Shift+F`)
+- Context menu integration for all commands
 - Configurable OpenGrok base URL
 - Optional integrated Simple Browser support
+- Multi-project workspace support with top-level folder mode
 - Line number navigation
+- Quoted search queries for exact matches
 
 ## Contributing
 
