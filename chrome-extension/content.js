@@ -193,9 +193,8 @@ function enhanceUI() {
 
 // Quick File Finder
 let fileFinderModal = null;
-let cachedFileList = null;
-let cacheTimestamp = null;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+let searchTimeout = null;
+let currentProject = null;
 
 function handleKeyboardShortcuts(e) {
   // 't' key to open file finder (unless in input field)
@@ -224,21 +223,25 @@ async function openFileFinder() {
   const parsed = parseOpenGrokUrl();
   if (!parsed) return;
 
+  currentProject = parsed.project;
+
   // Create modal
   fileFinderModal = document.createElement('div');
   fileFinderModal.className = 'vscode-finder-modal';
   fileFinderModal.innerHTML = `
     <div class="vscode-finder-container">
       <div class="vscode-finder-header">
-        <span class="vscode-finder-title">🔍 Quick File Finder</span>
+        <span class="vscode-finder-title">Quick File Finder</span>
         <button class="vscode-finder-close">&times;</button>
       </div>
-      <input type="text" class="vscode-finder-input" placeholder="Type to search files..." autofocus>
-      <div class="vscode-finder-loading">Loading files...</div>
-      <div class="vscode-finder-results"></div>
+      <input type="text" class="vscode-finder-input" placeholder="Type to search files in ${parsed.project}..." autofocus>
+      <div class="vscode-finder-results">
+        <div class="vscode-finder-empty">Type at least 2 characters to search</div>
+      </div>
       <div class="vscode-finder-footer">
         <span>↑↓ Navigate</span>
-        <span>Enter Open in VS Code</span>
+        <span>Enter Open</span>
+        <span>⇧Enter VS Code</span>
         <span>ESC Close</span>
       </div>
     </div>
@@ -260,13 +263,22 @@ async function openFileFinder() {
     }
   });
 
-  // Input handler with debouncing
-  let debounceTimer;
+  // Input handler with debouncing (300ms for server-side search)
   input.addEventListener('input', (e) => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      filterFiles(e.target.value, resultsDiv);
-    }, 150);
+    const query = e.target.value.trim();
+
+    clearTimeout(searchTimeout);
+
+    if (query.length < 2) {
+      resultsDiv.innerHTML = '<div class="vscode-finder-empty">Type at least 2 characters to search</div>';
+      return;
+    }
+
+    resultsDiv.innerHTML = '<div class="vscode-finder-loading">Searching...</div>';
+
+    searchTimeout = setTimeout(() => {
+      searchFiles(query, resultsDiv);
+    }, 300);
   });
 
   // Keyboard navigation
@@ -279,17 +291,12 @@ async function openFileFinder() {
       selectPrevResult();
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      openSelectedFile();
+      openSelectedFile(e.shiftKey);
     }
   });
 
   // Focus input
   input.focus();
-
-  // Load file list
-  await loadFileList(parsed.project);
-  fileFinderModal.querySelector('.vscode-finder-loading').style.display = 'none';
-  filterFiles('', resultsDiv); // Show all files initially
 }
 
 function closeFileFinder() {
@@ -297,197 +304,96 @@ function closeFileFinder() {
     fileFinderModal.remove();
     fileFinderModal = null;
   }
+  clearTimeout(searchTimeout);
 }
 
-async function loadFileList(project) {
-  // Check cache
-  const now = Date.now();
-  const cacheKey = `fileList_${project}`;
+// Server-side file search using OpenGrok REST API
+async function searchFiles(query, resultsDiv) {
+  const baseUrl = window.location.origin + window.location.pathname.split('/xref/')[0];
 
-  if (cachedFileList && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
-    return;
-  }
-
-  // Try to load from storage cache first (synchronous alternative)
-  const cachedData = await new Promise((resolve) => {
-    chrome.storage.local.get([cacheKey], (result) => {
-      resolve(result[cacheKey]);
+  try {
+    // Use path search with wildcards for substring matching
+    const searchParams = new URLSearchParams({
+      path: `*${query}*`,
+      projects: currentProject,
+      maxresults: '50'
     });
-  });
 
-  if (cachedData && cachedData.files && cachedData.files.length > 0) {
-    const age = now - (cachedData.timestamp || 0);
-    if (age < CACHE_DURATION) {
-      cachedFileList = cachedData.files;
-      cacheTimestamp = cachedData.timestamp;
-      console.log(`Loaded ${cachedFileList.length} files from cache`);
+    const searchUrl = `${baseUrl}/api/v1/search?${searchParams}`;
+    console.log('Searching files:', searchUrl);
+
+    const response = await fetch(searchUrl);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        resultsDiv.innerHTML = '<div class="vscode-finder-empty">File search not available on this OpenGrok instance (requires REST API v1.0+)</div>';
+      } else if (response.status === 401 || response.status === 403) {
+        resultsDiv.innerHTML = '<div class="vscode-finder-empty">Authentication required for file search</div>';
+      } else {
+        resultsDiv.innerHTML = `<div class="vscode-finder-empty">Search failed (HTTP ${response.status})</div>`;
+      }
       return;
     }
-  }
 
-  // Try multiple API approaches
-  try {
-    const baseUrl = window.location.origin + window.location.pathname.split('/xref/')[0];
+    const data = await response.json();
 
-    // Method 1: Try the search API to get all files
-    try {
-      const searchUrl = `${baseUrl}/api/v1/search?projects=${project}&full=*`;
-      console.log('Trying search API:', searchUrl);
-      const searchResponse = await fetch(searchUrl);
-      if (searchResponse.ok) {
-        const data = await searchResponse.json();
-        // Extract file paths from search results
-        const files = new Set();
-        if (data.results && typeof data.results === 'object') {
-          Object.keys(data.results).forEach(filePath => {
-            files.add(filePath);
-          });
-        }
-        if (files.size > 0) {
-          cachedFileList = Array.from(files);
-          cacheTimestamp = now;
-          console.log(`Fetched ${cachedFileList.length} files from search API`);
-          chrome.storage.local.set({ [cacheKey]: { files: cachedFileList, timestamp: now } });
-          return;
-        }
-      }
-    } catch (e) {
-      console.log('Search API failed:', e);
+    // Extract file paths from results (results are keyed by file path)
+    const files = Object.keys(data.results || {});
+
+    if (files.length === 0) {
+      resultsDiv.innerHTML = '<div class="vscode-finder-empty">No matching files found</div>';
+      return;
     }
 
-    // Method 2: Try suggest API (might not work on all servers)
-    try {
-      const suggestUrl = `${baseUrl}/api/v1/suggest?projects=${project}&field=path`;
-      console.log('Trying suggest API:', suggestUrl);
-      const suggestResponse = await fetch(suggestUrl);
-      if (suggestResponse.ok) {
-        const data = await suggestResponse.json();
-        cachedFileList = data.suggestions || [];
-        if (cachedFileList.length > 0) {
-          cacheTimestamp = now;
-          console.log(`Fetched ${cachedFileList.length} files from suggest API`);
-          chrome.storage.local.set({ [cacheKey]: { files: cachedFileList, timestamp: now } });
-          return;
-        }
-      }
-    } catch (e) {
-      console.log('Suggest API failed:', e);
-    }
-  } catch (error) {
-    console.log('All API methods failed:', error);
-  }
+    // Sort by relevance (shorter paths and filename matches first)
+    const lowerQuery = query.toLowerCase();
+    files.sort((a, b) => {
+      const aFilename = a.split('/').pop().toLowerCase();
+      const bFilename = b.split('/').pop().toLowerCase();
 
-  // Fallback: scrape from current page or use cached data
-  if (cachedData && cachedData.files) {
-    cachedFileList = cachedData.files;
-    cacheTimestamp = cachedData.timestamp;
-    console.log(`Using stale cache with ${cachedFileList.length} files`);
-  } else {
-    cachedFileList = scrapeFilesFromPage();
-    console.log(`Scraped ${cachedFileList.length} files from page`);
-    chrome.storage.local.set({ [cacheKey]: { files: cachedFileList, timestamp: now } });
-  }
-}
+      // Filename matches first
+      const aInFilename = aFilename.includes(lowerQuery);
+      const bInFilename = bFilename.includes(lowerQuery);
+      if (aInFilename && !bInFilename) return -1;
+      if (!aInFilename && bInFilename) return 1;
 
-function scrapeFilesFromPage() {
-  // Try to extract file paths from the current page
-  const files = new Set();
-
-  // Method 1: Get from directory listing links
-  document.querySelectorAll('a[href*="/xref/"]').forEach(link => {
-    const href = link.getAttribute('href');
-    const match = href.match(/\/xref\/[^/]+\/(.+?)(?:[#?]|$)/);
-    if (match && match[1]) {
-      const path = match[1];
-      // Only add if it's not a directory (doesn't end with /)
-      if (!path.endsWith('/')) {
-        files.add(path);
-      }
-    }
-  });
-
-  // Method 2: Look for file links in directory tables
-  document.querySelectorAll('table a').forEach(link => {
-    const href = link.getAttribute('href');
-    if (href && href.includes('/xref/')) {
-      const match = href.match(/\/xref\/[^/]+\/(.+?)(?:[#?]|$)/);
-      if (match && match[1] && !match[1].endsWith('/')) {
-        files.add(match[1]);
-      }
-    }
-  });
-
-  console.log(`Scraped ${files.size} files from current page`);
-  return Array.from(files);
-}
-
-function filterFiles(query, resultsDiv) {
-  if (!cachedFileList || cachedFileList.length === 0) {
-    resultsDiv.innerHTML = '<div class="vscode-finder-empty">No files cached. Navigate through directories to build cache.</div>';
-    return;
-  }
-
-  const lowerQuery = query.toLowerCase();
-  let matches = cachedFileList;
-
-  if (query) {
-    // Fuzzy matching: file contains all query characters in order
-    matches = cachedFileList.filter(file => {
-      const lowerFile = file.toLowerCase();
-      let queryIndex = 0;
-      for (let i = 0; i < lowerFile.length && queryIndex < lowerQuery.length; i++) {
-        if (lowerFile[i] === lowerQuery[queryIndex]) {
-          queryIndex++;
-        }
-      }
-      return queryIndex === lowerQuery.length;
-    });
-
-    // Sort by relevance (prefer matches earlier in path, exact substring matches)
-    matches.sort((a, b) => {
-      const aLower = a.toLowerCase();
-      const bLower = b.toLowerCase();
-      const aIndex = aLower.indexOf(lowerQuery);
-      const bIndex = bLower.indexOf(lowerQuery);
-
-      // Exact substring matches first
-      if (aIndex !== -1 && bIndex === -1) return -1;
-      if (aIndex === -1 && bIndex !== -1) return 1;
-      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-
-      // Then by path depth (fewer slashes = shallower = better)
-      const aDepth = (a.match(/\//g) || []).length;
-      const bDepth = (b.match(/\//g) || []).length;
-      if (aDepth !== bDepth) return aDepth - bDepth;
+      // Then by path length (shorter = better)
+      if (a.length !== b.length) return a.length - b.length;
 
       return a.localeCompare(b);
     });
+
+    displayResults(files, query, resultsDiv);
+
+  } catch (error) {
+    console.error('File search error:', error);
+    resultsDiv.innerHTML = '<div class="vscode-finder-empty">Search failed - check console for details</div>';
   }
+}
 
-  // Limit to top 50 results
-  matches = matches.slice(0, 50);
-
-  if (matches.length === 0) {
-    resultsDiv.innerHTML = '<div class="vscode-finder-empty">No matching files found</div>';
-    return;
-  }
-
-  // Render results
-  resultsDiv.innerHTML = matches.map((file, index) => {
-    const highlighted = highlightMatch(file, query);
+function displayResults(files, query, resultsDiv) {
+  resultsDiv.innerHTML = files.map((file, index) => {
+    const filename = file.split('/').pop();
+    const directory = file.substring(0, file.lastIndexOf('/')) || '/';
+    const highlightedFilename = highlightMatch(filename, query);
 
     return `
-      <div class="vscode-finder-result ${index === 0 ? 'selected' : ''}" data-file="${file}">
-        <div class="vscode-finder-filename">${highlighted}</div>
+      <div class="vscode-finder-result ${index === 0 ? 'selected' : ''}" data-file="${escapeHtml(file)}">
+        <div class="vscode-finder-filename">${highlightedFilename}</div>
+        <div class="vscode-finder-directory">${escapeHtml(directory)}</div>
       </div>
     `;
   }).join('');
 
-  // Add click handlers
+  // Add click handlers (click = OpenGrok, shift+click = VS Code)
   resultsDiv.querySelectorAll('.vscode-finder-result').forEach(result => {
-    result.addEventListener('click', () => {
+    result.addEventListener('click', (e) => {
       const file = result.getAttribute('data-file');
-      openFileInVSCode(file);
+      if (e.shiftKey) {
+        openFileInVSCode(file);
+      } else {
+        navigateToFile(file);
+      }
     });
   });
 }
@@ -547,24 +453,60 @@ function selectPrevResult() {
   results[prevIndex].scrollIntoView({ block: 'nearest' });
 }
 
-function openSelectedFile() {
+function openSelectedFile(openInVSCodeFlag = false) {
   const selected = fileFinderModal.querySelector('.vscode-finder-result.selected');
   if (!selected) return;
 
   const file = selected.getAttribute('data-file');
-  openFileInVSCode(file);
+  if (openInVSCodeFlag) {
+    openFileInVSCode(file);
+  } else {
+    navigateToFile(file);
+  }
+}
+
+function navigateToFile(filePath) {
+  // Navigate to the file in OpenGrok
+  const baseUrl = window.location.origin + window.location.pathname.split('/xref/')[0];
+
+  // The API returns paths that may already include the project prefix
+  // Strip it if present to avoid duplication
+  let cleanPath = filePath;
+  if (filePath.startsWith('/' + currentProject + '/')) {
+    cleanPath = filePath.substring(currentProject.length + 1);
+  } else if (filePath.startsWith(currentProject + '/')) {
+    cleanPath = filePath.substring(currentProject.length + 1);
+  }
+
+  const fileUrl = `${baseUrl}/xref/${currentProject}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`;
+
+  closeFileFinder();
+  window.location.href = fileUrl;
 }
 
 function openFileInVSCode(filePath) {
   const parsed = parseOpenGrokUrl();
   if (!parsed) return;
 
+  // The API returns paths that may already include the project prefix
+  // Strip it if present to avoid duplication
+  let cleanPath = filePath;
+  if (filePath.startsWith('/' + parsed.project + '/')) {
+    cleanPath = filePath.substring(parsed.project.length + 2);
+  } else if (filePath.startsWith(parsed.project + '/')) {
+    cleanPath = filePath.substring(parsed.project.length + 1);
+  }
+  // Also strip leading slash for the VS Code path
+  if (cleanPath.startsWith('/')) {
+    cleanPath = cleanPath.substring(1);
+  }
+
   // Send to background script to open in VS Code
   chrome.runtime.sendMessage({
     action: 'openInVSCode',
     data: {
       project: parsed.project,
-      filePath: filePath,
+      filePath: cleanPath,
       lineNumber: '1'
     }
   }, (response) => {

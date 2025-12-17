@@ -40,3 +40,4 @@
 * It's really not clear when to ask it to go and research something first vs just have a go itself and debug (a bit like in the real world!)
 * Big prompts are MUCH much more efficient
 * It seems unreasonably good at this
+* Random observation about how it Googles... I notice it always includes a year in the search term
