@@ -3,6 +3,7 @@
 ## Approach
 
 * I spent £18 on Claude for a month over Christmas
+* Initially just used Sonnet without 'thinking' but explored that later
 
 ## What Claude is Doing
 
@@ -30,6 +31,7 @@
 * I asked it to consider doing an MVP vs full thing (said it'd take 20 mins for the full thing or 7 for the MVP, vs 12 hours for a human)
 * It even made me a manual test plan to run for it
 * Single hardest issue was getting it to lay out the buttons incorrectly. I had to be very specific with what the issue was (because I guess it couldn't 'see' it?)
+* I tried funky prompts like 'make the UI look more professional'
 
 ## Observations
 

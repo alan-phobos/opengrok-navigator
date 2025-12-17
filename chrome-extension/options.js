@@ -1,3 +1,6 @@
+// Auto-save debounce timer
+let autoSaveTimer = null;
+
 // Load saved settings
 async function loadSettings() {
   const syncResult = await chrome.storage.sync.get({
@@ -42,12 +45,45 @@ function addMappingRow(project = '', path = '') {
 
   const removeBtn = document.createElement('button');
   removeBtn.textContent = 'Remove';
-  removeBtn.onclick = () => row.remove();
+  removeBtn.className = 'remove-btn';
+
+  // Function to update remove button visibility
+  const updateRemoveButton = () => {
+    const hasContent = projectInput.value.trim() !== '' || pathInput.value.trim() !== '';
+    removeBtn.style.display = hasContent ? 'block' : 'none';
+  };
+
+  // Set initial visibility
+  updateRemoveButton();
+
+  // Update visibility and auto-save when inputs change
+  projectInput.addEventListener('input', () => {
+    updateRemoveButton();
+    autoSave();
+  });
+
+  pathInput.addEventListener('input', () => {
+    updateRemoveButton();
+    autoSave();
+  });
+
+  removeBtn.onclick = () => {
+    row.remove();
+    autoSave();
+  };
 
   row.appendChild(projectInput);
   row.appendChild(pathInput);
   row.appendChild(removeBtn);
   mappingsDiv.appendChild(row);
+}
+
+// Auto-save with debouncing
+function autoSave() {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    saveSettings();
+  }, 500); // Wait 500ms after last change before saving
 }
 
 // Save settings
@@ -77,14 +113,15 @@ async function saveSettings() {
     experimentalFileFinder: experimentalFileFinder
   });
 
-  const status = document.getElementById('status');
-  status.textContent = 'Settings saved!';
-  setTimeout(() => status.textContent = '', 2000);
+  // Settings saved silently - no status message needed
 }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   loadSettings();
+
+  // Auto-save listeners
+  document.getElementById('defaultWorkspaceRoot').addEventListener('input', () => autoSave());
+  document.getElementById('experimentalFileFinder').addEventListener('change', () => autoSave());
   document.getElementById('addMapping').addEventListener('click', () => addMappingRow());
-  document.getElementById('save').addEventListener('click', saveSettings);
 });
