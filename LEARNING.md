@@ -41,3 +41,4 @@
 * Big prompts are MUCH much more efficient
 * It seems unreasonably good at this
 * Random observation about how it Googles... I notice it always includes a year in the search term
+* The opus model + thinking change was good but it still makes mistakes and it absolutely burns through the limits. I'll try again with just thinking and not opus and vise-versa.

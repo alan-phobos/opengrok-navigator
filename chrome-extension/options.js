@@ -8,12 +8,7 @@ async function loadSettings() {
     defaultWorkspaceRoot: ''
   });
 
-  const localResult = await chrome.storage.local.get({
-    experimentalFileFinder: false
-  });
-
   document.getElementById('defaultWorkspaceRoot').value = syncResult.defaultWorkspaceRoot;
-  document.getElementById('experimentalFileFinder').checked = localResult.experimentalFileFinder;
 
   const mappingsDiv = document.getElementById('mappings');
   mappingsDiv.innerHTML = '';
@@ -102,15 +97,10 @@ async function saveSettings() {
   });
 
   const defaultRoot = document.getElementById('defaultWorkspaceRoot').value.trim();
-  const experimentalFileFinder = document.getElementById('experimentalFileFinder').checked;
 
   await chrome.storage.sync.set({
     projectMappings: mappings,
     defaultWorkspaceRoot: defaultRoot
-  });
-
-  await chrome.storage.local.set({
-    experimentalFileFinder: experimentalFileFinder
   });
 
   // Settings saved silently - no status message needed
@@ -122,6 +112,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Auto-save listeners
   document.getElementById('defaultWorkspaceRoot').addEventListener('input', () => autoSave());
-  document.getElementById('experimentalFileFinder').addEventListener('change', () => autoSave());
   document.getElementById('addMapping').addEventListener('click', () => addMappingRow());
 });

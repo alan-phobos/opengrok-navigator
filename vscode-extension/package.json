@@ -170,6 +170,11 @@
           "type": "string",
           "default": "",
           "description": "Username for HTTP Basic Authentication (password stored securely)"
+        },
+        "opengrok-navigator.rejectUnauthorized": {
+          "type": "boolean",
+          "default": true,
+          "description": "Verify SSL certificates. Disable for self-signed certificates (not recommended for production)"
         }
       }
     }

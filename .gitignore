@@ -1,5 +1,8 @@
 node_modules
 package-lock.json
 *.vsix
+*.zip
 out
 *.map
+dist/
+.DS_Store

@@ -9,13 +9,13 @@
 - **⚡ Live Sync**: Toggle real-time synchronization - VS Code follows as you navigate
 - **👁️ Hover Preview**: See file info before opening (project, path, line)
 - **⌨️ Ctrl+Click**: Hold Ctrl/Cmd and click any line number
-- **🔍 Quick File Finder** _(Experimental)_: Press `T` for fuzzy file search (GitHub-style)
+- **🔍 Quick File Finder**: Press `T` for instant file search (GitHub-style)
 - **Right-Click Menu**: Context menu on line numbers and pages
 
 ### ⌨️ Keyboard Shortcuts
 - `Ctrl+Shift+O` (Mac: `Cmd+Shift+O`) - Open current line in VS Code
 - `Ctrl+Shift+F` (Mac: `Cmd+Shift+F`) - Open file at line 1
-- `T` - Open quick file finder (when enabled)
+- `T` - Open quick file finder
 - `ESC` - Close file finder
 
 ## 🚀 Quick Start
@@ -40,10 +40,7 @@ Click the extension icon or right-click → **Options** to configure:
 2. **Default Workspace Root** (Optional):
    Set a root like `/Users/yourname/projects` to auto-map projects
 
-3. **Experimental Features** (Optional):
-   Enable Quick File Finder for fuzzy file search
-
-Click **Save Settings** when done.
+Settings are saved automatically.
 
 ## 💡 Usage
 
@@ -64,12 +61,13 @@ Click **Save Settings** when done.
 3. VS Code automatically opens and follows your browsing
 4. Perfect for code reviews and exploration sessions!
 
-### Quick File Finder (Experimental)
+### Quick File Finder
 
-1. Enable in extension options
-2. Press `T` on any OpenGrok page
-3. Type to fuzzy search files (e.g., "mkin" finds "src/tools/make/Makefile")
-4. Use ↑↓ arrows to navigate, Enter to open in VS Code
+1. Press `T` on any OpenGrok page
+2. Type at least 2 characters to search (e.g., "main" finds all files with "main" in the path)
+3. Use ↑↓ arrows to navigate results
+4. Press **Enter** to open in OpenGrok, **Shift+Enter** to open in VS Code
+5. Press **ESC** to close
 
 ## 🎯 How It Works
 

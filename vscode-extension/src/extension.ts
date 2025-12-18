@@ -151,9 +151,12 @@ async function searchOpenGrokAPI(baseUrl: string, searchText: string, projectNam
         const config = vscode.workspace.getConfiguration('opengrok-navigator');
         const authEnabled = config.get<boolean>('authEnabled', false);
         const username = config.get<string>('authUsername', '');
+        const rejectUnauthorized = config.get<boolean>('rejectUnauthorized', true);
 
         // Prepare request options
-        const requestOptions: any = {};
+        const requestOptions: any = {
+            rejectUnauthorized: rejectUnauthorized
+        };
 
         if (authEnabled && username) {
             // Get password from secure storage

@@ -164,31 +164,27 @@ function enhanceUI() {
     setupLiveSyncButton(syncButton);
   }
 
-  // File finder button (only if experimental feature enabled)
-  chrome.storage.local.get(['experimentalFileFinder'], (result) => {
-    if (result.experimentalFileFinder) {
-      const finderButton = document.createElement('button');
-      finderButton.id = 'vscode-finder-button';
-      finderButton.textContent = '🔍 Find File';
-      finderButton.className = 'vscode-finder-btn';
-      finderButton.title = 'Quick file finder (press T) - Experimental';
+  // File finder button (always enabled)
+  const finderButton = document.createElement('button');
+  finderButton.id = 'vscode-finder-button';
+  finderButton.textContent = '🔍 Find File';
+  finderButton.className = 'vscode-finder-btn';
+  finderButton.title = 'Quick file finder (press T)';
 
-      // Insert at the beginning of toolbar (leftmost position)
-      toolbar.insertBefore(finderButton, toolbar.firstChild);
+  // Insert at the beginning of toolbar (leftmost position)
+  toolbar.insertBefore(finderButton, toolbar.firstChild);
 
-      finderButton.addEventListener('click', () => {
-        openFileFinder();
-      });
-
-      // Add keyboard shortcuts for file finder only if enabled
-      document.addEventListener('keydown', handleKeyboardShortcuts);
-    }
-
-    // Only append toolbar if it has buttons
-    if (toolbar.children.length > 0) {
-      document.body.appendChild(toolbar);
-    }
+  finderButton.addEventListener('click', () => {
+    openFileFinder();
   });
+
+  // Add keyboard shortcuts for file finder
+  document.addEventListener('keydown', handleKeyboardShortcuts);
+
+  // Only append toolbar if it has buttons
+  if (toolbar.children.length > 0) {
+    document.body.appendChild(toolbar);
+  }
 }
 
 // Quick File Finder

@@ -1,0 +1,83 @@
+# Changelog
+
+## [Unreleased]
+
+### Added
+- **Build System**: Comprehensive Makefile for building both extensions with single command
+  - `make` or `make dist` - Build everything and create a single distribution zip
+  - `make build-vscode` - Build VS Code extension only
+  - `make build-chrome` - Package Chrome extension only
+  - `make clean` - Remove all build artifacts
+  - `make source` - Create source-only distribution
+  - `make dev` - Quick development build (no clean)
+  - Automatic versioning from package.json
+  - Creates single `opengrok-navigator-vX.Y.Z.zip` containing both extensions and documentation
+  - Includes VERSION.txt file listing package contents
+
+- **Quick File Finder** (Chrome Extension): Now a core feature (no longer experimental)
+  - Server-side search using OpenGrok REST API `/api/v1/search?path=*query*`
+  - Real-time search as you type (300ms debounce)
+  - Dual-action results: Enter to open in OpenGrok, Shift+Enter to open in VS Code
+  - Displays filename + directory path for each result
+  - Works with any repository size (no pre-loading required)
+  - Press `T` on any OpenGrok page to activate
+  - Clear error messages for API unavailability or authentication issues
+
+- **SSL Certificate Support**:
+  - VS Code Extension: `opengrok-navigator.rejectUnauthorized` setting to disable certificate verification for self-signed certificates
+  - Configuration option with clear warning about security implications
+
+- **License and Build Files**:
+  - LICENSE file (MIT)
+  - .vscodeignore file for cleaner VS Code extension packaging
+  - BUILD.md with comprehensive build instructions
+  - Updated .gitignore for dist/ directory and build artifacts
+
+### Changed
+- **Chrome Extension Settings**: Reorganized settings page
+  - Removed "Experimental Features" section
+  - Added "Quick File Finder" section with usage instructions
+  - Simplified settings UI
+
+### Fixed
+- **Chrome Extension**: Fixed duplicate project name in Quick File Finder URLs
+  - API returns paths with project prefix, now properly stripped to avoid duplication
+  - Example: Fixed `/xref/illumos-gate//illumos-gate/path` → `/xref/illumos-gate/path`
+
+- **VS Code Extension**: Fixed warnings during build
+  - Added LICENSE file to vscode-extension/ directory to suppress missing license warning
+  - Added .vscodeignore file to suppress packaging warning
+  - Cleaner build output with no warnings
+
+### Removed
+- **Chrome Extension**: Removed experimental feature flag for Quick File Finder
+  - Feature is now always enabled
+  - Removed experimentalFileFinder from storage
+  - Removed conditional loading code
+
+## Design Decisions
+
+### Quick File Finder Redesign
+See [docs/QUICK_FILE_FINDER_DESIGN.md](docs/QUICK_FILE_FINDER_DESIGN.md) for full design rationale.
+
+**Key decisions:**
+1. **Server-side search** instead of client-side filtering - Works with repos of any size
+2. **Wildcard wrapping** (`*query*`) for intuitive substring matching
+3. **No fallback to page scraping** - Clear error messages instead of unreliable behavior
+
+### Build System Design
+- Single command (`make`) to build everything
+- Automatic version extraction from package.json
+- Separate targets for development (`make dev`) and distribution (`make dist`)
+- Clean separation of source, build artifacts, and distribution packages
+
+## Migration Notes
+
+### For Users
+- The Quick File Finder is now always available (no need to enable experimental features)
+- If you were using the experimental file finder, your experience is now improved with server-side search
+
+### For Developers
+- Run `make` to build both extensions
+- Distribution packages are created in `dist/` directory
+- See BUILD.md for detailed build instructions
