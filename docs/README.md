@@ -5,12 +5,16 @@ This folder contains design documents, implementation notes, and development pla
 ## Contents
 
 ### Design & Architecture
-- **[DESIGN_OPENGROK_TO_VSCODE.md](DESIGN_OPENGROK_TO_VSCODE.md)** - Original design document for the Chrome extension, outlining the architecture for browser-to-VS Code navigation
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Detailed implementation notes and technical decisions
+- **[DESIGN_OPENGROK_TO_VSCODE.md](DESIGN_OPENGROK_TO_VSCODE.md)** - Architecture and design decisions for Chrome extension (browser → VS Code navigation)
+- **[QUICK_FILE_FINDER_DESIGN.md](QUICK_FILE_FINDER_DESIGN.md)** - Quick file finder feature design and implementation rationale
+- **[DARK_MODE_REDESIGN.md](DARK_MODE_REDESIGN.md)** - Dark mode implementation approach (avoiding FOUC)
+
+### Setup & Installation
+- **[OPENGROK_OFFLINE_SETUP.md](OPENGROK_OFFLINE_SETUP.md)** - Complete guide for offline OpenGrok installation
+- **[SCRIPTS_DESIGN.md](SCRIPTS_DESIGN.md)** - Design documentation for automated installation scripts
 
 ### Feature Planning
-- **[FEATURE_SUGGESTIONS.md](FEATURE_SUGGESTIONS.md)** - Future feature ideas and enhancements based on analysis of similar tools (GitHub, GitLab, Sourcegraph extensions)
-- **[CHROME_EXTENSION_FEATURES.md](CHROME_EXTENSION_FEATURES.md)** - Detailed feature specifications for the Chrome extension
+- **[FEATURE_SUGGESTIONS.md](FEATURE_SUGGESTIONS.md)** - Future feature ideas and enhancements
 - **[TODO.md](TODO.md)** - Active development tasks and known issues
 
 ## For Users
@@ -18,6 +22,8 @@ This folder contains design documents, implementation notes, and development pla
 If you're looking for user documentation, see:
 - Main project README: [../README.md](../README.md)
 - Chrome extension guide: [../chrome-extension/README.md](../chrome-extension/README.md)
+- Build instructions: [../BUILD.md](../BUILD.md)
+- Quick start: [../QUICKSTART.md](../QUICKSTART.md)
 
 ## For Developers
 

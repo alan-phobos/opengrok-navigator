@@ -2,7 +2,7 @@
 
 Bidirectional VS Code ↔ OpenGrok integration via two extensions.
 
-**Current Version:** v1.1.0 (both extensions)
+**Current Version:** v1.2.0 (both extensions)
 
 ## VS Code Extension (`vscode-extension/`)
 - Open current line in OpenGrok, copy URLs, search & display results in sidebar

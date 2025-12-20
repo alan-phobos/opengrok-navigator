@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.0] - 2025-12-20
+
+### Fixed
+- **Chrome Extension**: Dark mode FOUC (Flash of Unstyled Content) completely resolved
+  - Implemented early script injection at `document_start` for instant dark mode application
+  - Added localStorage caching for synchronous theme detection
+  - See [docs/DARK_MODE_REDESIGN.md](docs/DARK_MODE_REDESIGN.md) for technical details
+- **VS Code Extension**: Click-through functionality for search results
+  - Search results now properly open files in editor when clicked
+
 ## [1.1.0] - 2025-12-18
 
 ### Changed

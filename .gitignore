@@ -6,3 +6,4 @@ out
 *.map
 dist/
 .DS_Store
+LEARNING.md
