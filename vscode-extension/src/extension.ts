@@ -147,11 +147,12 @@ async function searchOpenGrokAPI(baseUrl: string, searchText: string, projectNam
         const urlObj = new URL(searchUrl);
         const protocol = urlObj.protocol === 'https:' ? https : http;
 
-        // Get authentication configuration
+        // Get authentication and timeout configuration
         const config = vscode.workspace.getConfiguration('opengrok-navigator');
         const authEnabled = config.get<boolean>('authEnabled', false);
         const username = config.get<string>('authUsername', '');
         const rejectUnauthorized = config.get<boolean>('rejectUnauthorized', true);
+        const searchTimeout = config.get<number>('searchTimeout', 30000);
 
         // Prepare request options
         const requestOptions: any = {
@@ -192,8 +193,29 @@ async function searchOpenGrokAPI(baseUrl: string, searchText: string, projectNam
             }
         }
 
+        // Set up timeout
+        let timeoutHandle: NodeJS.Timeout | undefined;
+        const cleanup = () => {
+            if (timeoutHandle) {
+                clearTimeout(timeoutHandle);
+            }
+        };
+
         const req = protocol.get(searchUrl, requestOptions, (res) => {
+            cleanup(); // Clear timeout on response
             const statusCode = res.statusCode || 0;
+
+            // Handle authentication errors
+            if (statusCode === 401) {
+                reject(new Error('Authentication failed. Check your username and password in settings.'));
+                return;
+            }
+
+            // Handle connection errors
+            if (statusCode >= 500) {
+                reject(new Error(`OpenGrok server error (${statusCode}). The server may be experiencing issues.`));
+                return;
+            }
 
             // If we get 404, the REST API doesn't exist - fall back to HTML
             if (statusCode === 404) {
@@ -235,9 +257,25 @@ async function searchOpenGrokAPI(baseUrl: string, searchText: string, projectNam
             });
         });
 
-        req.on('error', (error) => {
-            reject(error);
+        req.on('error', (error: NodeJS.ErrnoException) => {
+            cleanup();
+            // Provide helpful error messages based on error type
+            if (error.code === 'ECONNREFUSED') {
+                reject(new Error(`Could not connect to OpenGrok at ${baseUrl}. Check that OpenGrok is running and the URL is correct.`));
+            } else if (error.code === 'ENOTFOUND') {
+                reject(new Error(`Could not resolve hostname in ${baseUrl}. Check that the URL is correct.`));
+            } else if (error.code === 'ETIMEDOUT' || error.code === 'ESOCKETTIMEDOUT') {
+                reject(new Error(`Connection timed out after ${searchTimeout / 1000}s. Try a more specific search term or increase the timeout in settings.`));
+            } else {
+                reject(new Error(`Network error: ${error.message}`));
+            }
         });
+
+        // Set timeout
+        timeoutHandle = setTimeout(() => {
+            req.destroy();
+            reject(new Error(`Search timed out after ${searchTimeout / 1000}s. Try a more specific search term or increase the timeout in settings.`));
+        }, searchTimeout);
 
         req.end();
     });
@@ -246,6 +284,8 @@ async function searchOpenGrokAPI(baseUrl: string, searchText: string, projectNam
 // Parse OpenGrok JSON API search results
 function parseOpenGrokJSON(data: any, baseUrl: string, projectName: string, useTopLevelFolder: boolean, searchTerm: string): SearchResultFile[] {
     const workspaceFolders = vscode.workspace.workspaceFolders;
+    const config = vscode.workspace.getConfiguration('opengrok-navigator');
+    const contextLength = config.get<number>('contextLength', 300);
     const seen = new Set<string>(); // Track unique file+line combinations
     const fileMap = new Map<string, { directory: string, lines: SearchResultLine[], fullPath: string }>();
 
@@ -298,9 +338,15 @@ function parseOpenGrokJSON(data: any, baseUrl: string, projectName: string, useT
                 .replace(/\s+/g, ' ') // Normalize whitespace
                 .trim();
 
-            // Limit context length
-            if (context.length > 150) {
-                context = context.substring(0, 147) + '...';
+            // Limit context length with word-boundary aware truncation
+            if (context.length > contextLength) {
+                let truncated = context.substring(0, contextLength);
+                // Try to break at a word boundary
+                const lastSpace = truncated.lastIndexOf(' ');
+                if (lastSpace > contextLength * 0.8) { // Only use word boundary if we're not losing too much
+                    truncated = truncated.substring(0, lastSpace);
+                }
+                context = truncated + '...';
             }
 
             // Skip if line number is invalid
@@ -380,6 +426,8 @@ function parseOpenGrokJSON(data: any, baseUrl: string, projectName: string, useT
 // Parse OpenGrok HTML search results
 function parseOpenGrokResults(html: string, baseUrl: string, projectName: string, useTopLevelFolder: boolean, searchTerm: string, outputChannel?: vscode.OutputChannel): SearchResultFile[] {
     const workspaceFolders = vscode.workspace.workspaceFolders;
+    const config = vscode.workspace.getConfiguration('opengrok-navigator');
+    const contextLength = config.get<number>('contextLength', 300);
     const seen = new Set<string>(); // Track unique file+line combinations
     const fileMap = new Map<string, { directory: string, lines: SearchResultLine[], fullPath: string }>();
 
@@ -440,9 +488,15 @@ function parseOpenGrokResults(html: string, baseUrl: string, projectName: string
             .replace(/\s+/g, ' ') // Normalize whitespace
             .trim();
 
-        // Limit context length
-        if (context.length > 150) {
-            context = context.substring(0, 147) + '...';
+        // Limit context length with word-boundary aware truncation
+        if (context.length > contextLength) {
+            let truncated = context.substring(0, contextLength);
+            // Try to break at a word boundary
+            const lastSpace = truncated.lastIndexOf(' ');
+            if (lastSpace > contextLength * 0.8) { // Only use word boundary if we're not losing too much
+                truncated = truncated.substring(0, lastSpace);
+            }
+            context = truncated + '...';
         }
 
         // If we couldn't extract context, use a placeholder

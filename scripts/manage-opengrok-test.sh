@@ -382,21 +382,26 @@ command_start() {
     # Check port availability
     check_port_available "$port" "$name"
 
-    # Determine codebase type
+    # Determine codebase type and project name
     local codebase_type=""
     local source_path=""
+    local project_name=""
 
     if [ -z "$codebase" ]; then
         info "No codebase specified, creating demo code..."
         codebase_type="demo"
         source_path=$(create_demo_codebase)
         codebase="$source_path"
+        project_name="demo"
     elif [ -d "$codebase" ]; then
         codebase_type="local"
         source_path="$(cd "$codebase" && pwd)"
+        project_name=$(basename "$source_path")
     elif [[ "$codebase" =~ ^(https?://|git@|ssh://) ]]; then
         codebase_type="git"
         source_path="$codebase"
+        # Extract repo name from URL (e.g., https://github.com/user/repo.git -> repo)
+        project_name=$(basename "$codebase" .git)
     else
         die "Codebase not found: $codebase"
     fi
@@ -447,6 +452,7 @@ command_start() {
         -y \
         --indexer-memory 2048 \
         --port "$port" \
+        --project-name "$project_name" \
         /tmp/opengrok-deps \
         /tmp/source-code
 

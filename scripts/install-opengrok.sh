@@ -12,6 +12,7 @@ set -euo pipefail
 #   --install-dir DIR       Base installation directory (default: /opt)
 #   --data-dir DIR          OpenGrok data directory (default: /var/opengrok)
 #   --port PORT             Tomcat HTTP port (default: 8080)
+#   --project-name NAME     Project name (default: auto-detect from source dir)
 #   --no-systemd            Skip systemd service installation
 #   --skip-indexing         Skip initial indexing (index later manually)
 #   -y, --yes               Non-interactive mode (auto-confirm all prompts)
@@ -33,6 +34,7 @@ readonly NC='\033[0m' # No Color
 INSTALL_BASE="/opt"
 DATA_BASE="/var/opengrok"
 TOMCAT_PORT="8080"
+PROJECT_NAME=""  # Auto-detect if not specified
 INSTALL_SYSTEMD=true
 RUN_INDEXING=true
 ASSUME_YES=false
@@ -247,12 +249,16 @@ detect_project_name() {
     local src_dir="$1"
     local project_name
 
-    # Use the first directory name in source root as project name
-    project_name=$(find "$src_dir" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | head -1)
+    # Use basename of source directory as project name
+    project_name=$(basename "$src_dir")
 
-    if [[ -z "$project_name" ]]; then
-        # If no subdirectories, use basename of source dir
-        project_name=$(basename "$src_dir")
+    # If it's a temp directory or generic name, try to find a better name
+    if [[ "$project_name" =~ ^tmp\. ]] || [[ "$project_name" == "source-code" ]]; then
+        # Use the first directory name in source root as project name
+        local first_dir=$(find "$src_dir" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | head -1)
+        if [[ -n "$first_dir" ]]; then
+            project_name="$first_dir"
+        fi
     fi
 
     echo "$project_name"
@@ -541,10 +547,15 @@ setup_source_code() {
 
     log_info "Setting up source code..."
 
-    # Detect project name
+    # Detect or use provided project name
     local project_name
-    project_name=$(detect_project_name "$source_dir")
-    log_info "Detected project: $project_name"
+    if [[ -n "$PROJECT_NAME" ]]; then
+        project_name="$PROJECT_NAME"
+        log_info "Using provided project name: $project_name"
+    else
+        project_name=$(detect_project_name "$source_dir")
+        log_info "Detected project name: $project_name"
+    fi
 
     # Create project directory
     local project_dir="${DATA_BASE}/src/${project_name}"
@@ -561,7 +572,8 @@ setup_source_code() {
 
     # Copy or link source code
     log_info "Copying source code to $project_dir..."
-    cp -r "$source_dir" "$project_dir"
+    mkdir -p "$project_dir"
+    cp -r "$source_dir"/. "$project_dir/"
 
     # Set permissions
     chown -R "$USER:$USER" "${DATA_BASE}/src"
@@ -736,6 +748,10 @@ main() {
                 ;;
             --port)
                 TOMCAT_PORT="$2"
+                shift 2
+                ;;
+            --project-name)
+                PROJECT_NAME="$2"
                 shift 2
                 ;;
             --indexer-memory)

@@ -175,6 +175,16 @@
           "type": "boolean",
           "default": true,
           "description": "Verify SSL certificates. Disable for self-signed certificates (not recommended for production)"
+        },
+        "opengrok-navigator.searchTimeout": {
+          "type": "number",
+          "default": 30000,
+          "description": "Search timeout in milliseconds (default: 30000ms = 30 seconds)"
+        },
+        "opengrok-navigator.contextLength": {
+          "type": "number",
+          "default": 300,
+          "description": "Maximum length of context displayed for each search result (default: 300 characters)"
         }
       }
     }

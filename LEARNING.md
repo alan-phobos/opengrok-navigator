@@ -49,12 +49,13 @@
 # Testing
 
 * It's great at this if you tell it to go off and do stuff.
-* Got it to write a script which sets up a linux VM running opengrok and it failed for a while but about 10 mins of debugging (by itself) later it worked perfectly.
+* Got it to write a script which sets up a linux VM running opengrok and it failed for a while but about 10 mins of debugging (by itself) later it worked perfectly (see Multipass above)
 
 # Other Weird Stuff
 
-* I tried doiing a recipe search and certain websites (bbcgoodfood) blocked Claude from accessing it. But Claude decided it wasn't impressed and did a search to work out how to avoid the issue and found that bbcgoodfoodme (middle east) had the same recipes but no agents control file so it got them from there.
+* I tried doing a recipe search and certain websites (bbcgoodfood) blocked Claude from accessing it. But Claude decided it wasn't impressed and did a search to work out how to avoid the issue and found that bbcgoodfoodme (middle east) had the same recipes but no agents control file so it got them from there.
 * The integration with Apple Notes is really yanky - it uses some sort of AppleScript hack which can't handle doing fancy formatting like checkboxes etc so it looks like it's properly integrated but it's very limited. I assume apps will get better at this over time.
+* Surprisingly good at spotting mistakes in my own actions e.g. when I unpacked files to the wrong directory it scanned the entire filesystem and found them, then pointed out my instructions where wrong.
 
 # Usage Notes
 
